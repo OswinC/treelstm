@@ -49,13 +49,10 @@ end
 function BinaryTreeLSTM:new_composer()
   local lc, lh = nn.Identity()(), nn.Identity()()
   local rc, rh = nn.Identity()(), nn.Identity()()
-  local ch = nn.View(1, self.mem_dim * 2)(nn.JoinTable(1){lh, rh})
-  local cch = nn.View(1, self.mem_dim * 2)(nn.JoinTable(1){lh, rh})
-  local tens_comp = nn.Bilinear(self.mem_dim * 2, self.mem_dim * 2, self.mem_dim, false){ch, cch}
   local ntl = function()
-      return nn.CAddTable(){
-          nn.View(self.mem_dim)(tens_comp),
-          nn.Linear(self.mem_dim * 2, self.mem_dim)(ch)
+      return nn.Bilinear(self.mem_dim, self.mem_dim, self.mem_dim){
+          nn.View(1, self.mem_dim)(lh),
+          nn.View(1, self.mem_dim)(rh)
       }
   end
   local new_gate = ntl
