@@ -49,12 +49,22 @@ end
 function BinaryTreeLSTM:new_composer()
   local lc, lh = nn.Identity()(), nn.Identity()()
   local rc, rh = nn.Identity()(), nn.Identity()()
-  local new_gate = function()
-    return nn.CAddTable(){
-      nn.Linear(self.mem_dim, self.mem_dim)(lh),
-      nn.Linear(self.mem_dim, self.mem_dim)(rh)
-    }
+  local ch = nn.View(1, self.mem_dim * 2)(nn.JoinTable(1){lh, rh})
+  local cch = nn.View(1, self.mem_dim * 2)(nn.JoinTable(1){lh, rh})
+  local tens_comp = nn.Bilinear(self.mem_dim * 2, self.mem_dim * 2, self.mem_dim, false){ch, cch}
+  local ntl = function()
+      return nn.CAddTable(){
+          nn.View(self.mem_dim)(tens_comp),
+          nn.Linear(self.mem_dim * 2, self.mem_dim)(ch)
+      }
   end
+  local new_gate = ntl
+  --local new_gate = function()
+    --return nn.CAddTable(){      -- TODO: additional inputs for internal nodes?
+      --nn.Linear(self.mem_dim, self.mem_dim)(lh),
+      --nn.Linear(self.mem_dim, self.mem_dim)(rh)
+    --}
+  --end
 
   local i = nn.Sigmoid()(new_gate())    -- input gate
   local lf = nn.Sigmoid()(new_gate())   -- left forget gate
