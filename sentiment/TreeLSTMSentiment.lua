@@ -8,7 +8,7 @@ local TreeLSTMSentiment = torch.class('treelstm.TreeLSTMSentiment')
 
 function TreeLSTMSentiment:__init(config)
   self.mem_dim           = config.mem_dim           or 150
-  self.learning_rate     = config.learning_rate     or 0.05
+  self.rho	             = config.rho               or 0.7
   self.emb_learning_rate = config.emb_learning_rate or 0.1
   self.batch_size        = config.batch_size        or 25
   self.reg               = config.reg               or 1e-4
@@ -25,7 +25,7 @@ function TreeLSTMSentiment:__init(config)
   self.num_classes = self.fine_grained and 5 or 3
 
   -- optimizer configuration
-  self.optim_state = { learningRate = self.learning_rate }
+  self.optim_state = { rho = self.rho }
 
   -- negative log likelihood optimization objective
   self.criterion = nn.ClassNLLCriterion()
@@ -94,7 +94,7 @@ function TreeLSTMSentiment:train(dataset)
       return loss, self.grad_params
     end
 
-    optim.adagrad(feval, self.params, self.optim_state)
+    optim.adadelta(feval, self.params, self.optim_state)
     self.emb:updateParameters(self.emb_learning_rate)
   end
   xlua.progress(dataset.size, dataset.size)
@@ -146,7 +146,7 @@ function TreeLSTMSentiment:print_config()
   printf('%-25s = %d\n',   'Tree-LSTM memory dim', self.mem_dim)
   printf('%-25s = %.2e\n', 'regularization strength', self.reg)
   printf('%-25s = %d\n',   'minibatch size', self.batch_size)
-  printf('%-25s = %.2e\n', 'learning rate', self.learning_rate)
+  printf('%-25s = %.2e\n', 'rho', self.rho)
   printf('%-25s = %.2e\n', 'word vector learning rate', self.emb_learning_rate)
   printf('%-25s = %s\n',   'dropout', tostring(self.dropout))
 end
@@ -158,7 +158,7 @@ function TreeLSTMSentiment:save(path)
     emb_learning_rate = self.emb_learning_rate,
     emb_vecs          = self.emb.weight:float(),
     fine_grained      = self.fine_grained,
-    learning_rate     = self.learning_rate,
+    rho               = self.rho,
     mem_dim           = self.mem_dim,
     reg               = self.reg,
     structure         = self.structure,
