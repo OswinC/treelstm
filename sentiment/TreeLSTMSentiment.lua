@@ -8,7 +8,7 @@ local TreeLSTMSentiment = torch.class('treelstm.TreeLSTMSentiment')
 
 function TreeLSTMSentiment:__init(config)
   self.mem_dim           = config.mem_dim           or 150
-  self.rho	             = config.rho               or 0.7
+  self.rho	             = config.rho               or 0.5
   self.emb_learning_rate = config.emb_learning_rate or 0.1
   self.batch_size        = config.batch_size        or 25
   self.reg               = config.reg               or 1e-4

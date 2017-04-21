@@ -60,18 +60,20 @@ function BinaryTreeLSTM:new_composer()
           nn.Linear(self.mem_dim, self.mem_dim)(rh)
       }
   end
-  local new_gate = ntl
-  --local new_gate = function()
-    --return nn.CAddTable(){      -- TODO: additional inputs for internal nodes?
-      --nn.Linear(self.mem_dim, self.mem_dim)(lh),
-      --nn.Linear(self.mem_dim, self.mem_dim)(rh)
-    --}
-  --end
+  local new_gate = function(NTL)
+      if NTL then return ntl()
+      else 
+          return nn.CAddTable(){
+              nn.Linear(self.mem_dim, self.mem_dim)(lh),
+              nn.Linear(self.mem_dim, self.mem_dim)(rh)
+          }
+      end
+  end
 
-  local i = nn.Sigmoid()(new_gate())    -- input gate
-  local lf = nn.Sigmoid()(new_gate())   -- left forget gate
-  local rf = nn.Sigmoid()(new_gate())   -- right forget gate
-  local update = nn.Tanh()(new_gate())  -- memory cell update vector
+  local i = nn.Sigmoid()(new_gate(false))    -- input gate
+  local lf = nn.Sigmoid()(new_gate(false))   -- left forget gate
+  local rf = nn.Sigmoid()(new_gate(false))   -- right forget gate
+  local update = nn.Tanh()(new_gate(true))  -- memory cell update vector
   local c = nn.CAddTable(){             -- memory cell
       nn.CMulTable(){i, update},
       nn.CMulTable(){lf, lc},
@@ -80,7 +82,7 @@ function BinaryTreeLSTM:new_composer()
 
   local h
   if self.gate_output then
-    local o = nn.Sigmoid()(new_gate()) -- output gate
+    local o = nn.Sigmoid()(new_gate(false)) -- output gate
     h = nn.CMulTable(){o, nn.Tanh()(c)}
   else
     h = nn.Tanh()(c)
